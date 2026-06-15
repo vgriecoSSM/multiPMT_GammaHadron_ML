@@ -222,6 +222,8 @@ __marimo__/
 dfs_feats/**/*.parquet
 output_files_ML/**/*.parquet
 results_files_ML/**/*.parquet
+pictures/**/*.png
+pictures/**/*.pdf
 
 # Ignore txt files only in selected output directories
 output_files_ML/**/*.txt
