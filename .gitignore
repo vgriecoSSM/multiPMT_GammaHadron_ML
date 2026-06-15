@@ -216,3 +216,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+# Ignore parquet files only in these data/output directories
+dfs_feats/**/*.parquet
+dfs_traces/**/*.parquet
+output_files_ML/**/*.parquet
+results_files_ML/**/*.parquet
+
+# Ignore txt files only in selected output directories
+output_files_ML/**/*.txt
+results_files_ML/**/*.txt
