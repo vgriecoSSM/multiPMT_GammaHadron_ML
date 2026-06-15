@@ -220,7 +220,6 @@ __marimo__/
 
 # Ignore parquet files only in these data/output directories
 dfs_feats/**/*.parquet
-dfs_traces/**/*.parquet
 output_files_ML/**/*.parquet
 results_files_ML/**/*.parquet
 
