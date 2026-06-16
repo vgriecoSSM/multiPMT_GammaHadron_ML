@@ -6,19 +6,22 @@ import os
 import pyarrow as pa, pyarrow.parquet as pq, gc
 from py_code import reco_regression
 
-def Read_Roots_For_Training(DATname : str, path_to_DAT_root : str, fit_type : str, output_dir_smu : str, output_dir_nmu : str, max_time : float, max_energy : float, max_theta : float, min_energy : float = 100*(10**3), min_theta : float = 0):
+def Read_Roots_For_Training(DATname : str, path_to_DAT_root : str, fit_type : str, output_dir_smu : str, output_dir_nmu : str, max_time : float, max_energy : float, max_theta : float, min_energy : float = 100*(10**3), min_theta : float = 0, verbose : bool = False):
 
     if not os.path.exists(path_to_DAT_root):
         return pd.DataFrame(), pd.DataFrame()
     else:
-        print("Working on ", path_to_DAT_root)
+        if verbose :
+            print("Working on ", path_to_DAT_root)
+        
     
 
     with uproot.open(path_to_DAT_root) as DAT:
         if "XCDF" in DAT:
             tree = DAT["XCDF"]
         else:
-            print(f"Skipping {path_to_DAT_root}: 'XCDF' not found")
+            if verbose : 
+                print(f"Skipping {path_to_DAT_root}: 'XCDF' not found")
             return pd.DataFrame()
                 
     #DAT = uproot.open(path_to_DAT_root)
@@ -26,7 +29,6 @@ def Read_Roots_For_Training(DATname : str, path_to_DAT_root : str, fit_type : st
     df = tree.arrays(library="pd")
 
     evts_number = len(df["HAWCSim.Evt.Num"].unique())
-    print("Number of primaries in this DAT ", evts_number)
     selected_prims = 0
 
     for i in df["HAWCSim.Evt.Num"].unique():
@@ -51,9 +53,9 @@ def Read_Roots_For_Training(DATname : str, path_to_DAT_root : str, fit_type : st
             
         else:
 
-            print("E_reco [TeV] = ", E_reco/1000)
+            #print("E_reco [TeV] = ", E_reco/1000)
 
-            p = dat.get_stations_info(p, "/home/grieco/SWGO_Soft/ML_multiPMT/survey_and_array_txt_repo/tank_pos_H_4FF.txt")
+            p = dat.get_stations_info(p, "../survey_and_array_txt_repo/tank_pos_H_4FF.txt")
             if p is None:
                 continue
 
@@ -81,19 +83,20 @@ def Read_Roots_For_Training(DATname : str, path_to_DAT_root : str, fit_type : st
             table_nmu = pa.Table.from_pandas(p_nmu)
             pq.write_table(table_nmu, out_path_nmu, compression="zstd")
 
-    print("Primaries after the cut = ", selected_prims)
+    print(DATname + ", Number of primaries in this DAT ", evts_number, "-> Primaries after the cut = ", selected_prims)
     if selected_prims != 0:
         return p_sm, p_nmu
     else:
         empty_df = pd.DataFrame()
         return empty_df, empty_df
                 
-def Read_Roots_For_Testing(output_dir : str, DATname : str, path_to_DAT_root: str, fit_type : str, max_time : float, max_energy : float, max_theta : float, min_energy : float = 100*(10**3), min_theta : float = 0):
+def Read_Roots_For_Testing(output_dir : str, DATname : str, path_to_DAT_root: str, fit_type : str, max_time : float, max_energy : float, max_theta : float, min_energy : float = 100*(10**3), min_theta : float = 0, verbose : bool = False):
 
     if not os.path.exists(path_to_DAT_root):
         return pd.DataFrame(), pd.DataFrame()
     else:
-        print("Working on ", path_to_DAT_root)
+        if verbose:
+            print("Working on ", path_to_DAT_root)
 
     try:
         with uproot.open(path_to_DAT_root) as DAT:
@@ -113,7 +116,6 @@ def Read_Roots_For_Testing(output_dir : str, DATname : str, path_to_DAT_root: st
     df = tree.arrays(library="pd")
 
     evts_number = len(df["HAWCSim.Evt.Num"].unique())
-    print("Number of primaries in this DAT ", evts_number)
     selected_prims = 0
 
     for i in df["HAWCSim.Evt.Num"].unique():
@@ -137,7 +139,7 @@ def Read_Roots_For_Testing(output_dir : str, DATname : str, path_to_DAT_root: st
 
             print("E_reco [TeV] = ", E_reco/1000)
             
-            p = dat.get_stations_info(p, "/home/grieco/SWGO_Soft/ML_multiPMT/survey_and_array_txt_repo/tank_pos_H_4FF.txt")
+            p = dat.get_stations_info(p, "../survey_and_array_txt_repo/tank_pos_H_4FF.txt")
             if p is None:
                 continue
 
@@ -164,7 +166,7 @@ def Read_Roots_For_Testing(output_dir : str, DATname : str, path_to_DAT_root: st
 
     else :
         
-        print("Primaries after the cut = ", selected_prims)
+        print(DATname + ", Number of primaries in this DAT ", evts_number, "-> Primaries after the cut = ", selected_prims)
         print("All Done ! :))")
     
         return p_test
