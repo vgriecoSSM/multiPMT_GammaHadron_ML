@@ -1,6 +1,13 @@
 # multiPMT_GammaHadron_ML
 A repository for Gamma-Hadron Discrimination with muliPMTs
 
+If it's the first time using the project, build the environment:
+
+     - ./build-env.sh
+
+Else :
+
+     - source activate-env.sh
 
 Not enough storage for unzipped directories -> Do :
 

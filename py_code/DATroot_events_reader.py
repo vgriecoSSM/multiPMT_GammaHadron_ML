@@ -137,7 +137,7 @@ def Read_Roots_For_Testing(output_dir : str, DATname : str, path_to_DAT_root: st
             
         else:
 
-            print("E_reco [TeV] = ", E_reco/1000)
+            #print("E_reco [TeV] = ", E_reco/1000)
             
             p = dat.get_stations_info(p, "../survey_and_array_txt_repo/tank_pos_H_4FF.txt")
             if p is None:
@@ -167,6 +167,5 @@ def Read_Roots_For_Testing(output_dir : str, DATname : str, path_to_DAT_root: st
     else :
         
         print(DATname + ", Number of primaries in this DAT ", evts_number, "-> Primaries after the cut = ", selected_prims)
-        print("All Done ! :))")
     
         return p_test

@@ -84,6 +84,13 @@ def appy_time_correction(primary : pd.DataFrame):
 
     return primary  
 
+def make_trace(times, max_time):
+    
+    arr = np.asarray(times, dtype=int)
+    arr = arr[(arr >= 0) & (arr < max_time)]
+
+    return np.bincount(arr, minlength=max_time)[:max_time].astype(int).tolist()
+
 def get_st_lvl_test_df(primary : pd.DataFrame, number_of_channels: int = 31381, channels_per_stations: int = 7, max_time:float = 100):
 
     dummy = primary.copy()
@@ -169,13 +176,13 @@ def get_st_lvl_test_df(primary : pd.DataFrame, number_of_channels: int = 31381, 
             else :
                 pe_not_by_muon +=1
                 
-        ch0_trace = np.bincount(np.array(times_pe_ch0, dtype=int), minlength=max_time)[:max_time].astype(int).tolist()
-        ch1_trace = np.bincount(np.array(times_pe_ch1, dtype=int), minlength=max_time)[:max_time].astype(int).tolist()
-        ch2_trace = np.bincount(np.array(times_pe_ch2, dtype=int), minlength=max_time)[:max_time].astype(int).tolist()
-        ch3_trace = np.bincount(np.array(times_pe_ch3, dtype=int), minlength=max_time)[:max_time].astype(int).tolist()
-        ch4_trace = np.bincount(np.array(times_pe_ch4, dtype=int), minlength=max_time)[:max_time].astype(int).tolist()
-        ch5_trace = np.bincount(np.array(times_pe_ch5, dtype=int), minlength=max_time)[:max_time].astype(int).tolist()
-        ch6_trace = np.bincount(np.array(times_pe_ch6, dtype=int), minlength=max_time)[:max_time].astype(int).tolist()
+        ch0_trace = make_trace(times_pe_ch0, max_time)
+        ch1_trace = make_trace(times_pe_ch1, max_time)
+        ch2_trace = make_trace(times_pe_ch2, max_time)
+        ch3_trace = make_trace(times_pe_ch3, max_time)
+        ch4_trace = make_trace(times_pe_ch4, max_time)
+        ch5_trace = make_trace(times_pe_ch5, max_time)
+        ch6_trace = make_trace(times_pe_ch6, max_time)
         
         #tank position for that station
         PE_xT = np.asarray(dummy["PE.Station_X"].iloc[0])[mask]
@@ -331,13 +338,13 @@ def get_st_lvl_train_sm_df(primary : pd.DataFrame, number_of_channels: int = 313
             else :
                 pe_not_by_muon +=1
                 
-        ch0_trace = np.bincount(np.array(times_pe_ch0, dtype=int), minlength=max_time)[:max_time].astype(int).tolist()
-        ch1_trace = np.bincount(np.array(times_pe_ch1, dtype=int), minlength=max_time)[:max_time].astype(int).tolist()
-        ch2_trace = np.bincount(np.array(times_pe_ch2, dtype=int), minlength=max_time)[:max_time].astype(int).tolist()
-        ch3_trace = np.bincount(np.array(times_pe_ch3, dtype=int), minlength=max_time)[:max_time].astype(int).tolist()
-        ch4_trace = np.bincount(np.array(times_pe_ch4, dtype=int), minlength=max_time)[:max_time].astype(int).tolist()
-        ch5_trace = np.bincount(np.array(times_pe_ch5, dtype=int), minlength=max_time)[:max_time].astype(int).tolist()
-        ch6_trace = np.bincount(np.array(times_pe_ch6, dtype=int), minlength=max_time)[:max_time].astype(int).tolist()
+        ch0_trace = make_trace(times_pe_ch0, max_time)
+        ch1_trace = make_trace(times_pe_ch1, max_time)
+        ch2_trace = make_trace(times_pe_ch2, max_time)
+        ch3_trace = make_trace(times_pe_ch3, max_time)
+        ch4_trace = make_trace(times_pe_ch4, max_time)
+        ch5_trace = make_trace(times_pe_ch5, max_time)
+        ch6_trace = make_trace(times_pe_ch6, max_time)
         
         #tank position for that station
         PE_xT = np.asarray(dummy["PE.Station_X"].iloc[0])[mask]
@@ -491,13 +498,13 @@ def get_st_lvl_train_nmu_df(primary : pd.DataFrame, number_of_channels: int = 31
             else :
                 pe_not_by_muon +=1
                 
-        ch0_trace = np.bincount(np.array(times_pe_ch0, dtype=int), minlength=max_time)[:max_time].astype(int).tolist()
-        ch1_trace = np.bincount(np.array(times_pe_ch1, dtype=int), minlength=max_time)[:max_time].astype(int).tolist()
-        ch2_trace = np.bincount(np.array(times_pe_ch2, dtype=int), minlength=max_time)[:max_time].astype(int).tolist()
-        ch3_trace = np.bincount(np.array(times_pe_ch3, dtype=int), minlength=max_time)[:max_time].astype(int).tolist()
-        ch4_trace = np.bincount(np.array(times_pe_ch4, dtype=int), minlength=max_time)[:max_time].astype(int).tolist()
-        ch5_trace = np.bincount(np.array(times_pe_ch5, dtype=int), minlength=max_time)[:max_time].astype(int).tolist()
-        ch6_trace = np.bincount(np.array(times_pe_ch6, dtype=int), minlength=max_time)[:max_time].astype(int).tolist()
+        ch0_trace = make_trace(times_pe_ch0, max_time)
+        ch1_trace = make_trace(times_pe_ch1, max_time)
+        ch2_trace = make_trace(times_pe_ch2, max_time)
+        ch3_trace = make_trace(times_pe_ch3, max_time)
+        ch4_trace = make_trace(times_pe_ch4, max_time)
+        ch5_trace = make_trace(times_pe_ch5, max_time)
+        ch6_trace = make_trace(times_pe_ch6, max_time)
         
         #tank position for that station
         PE_xT = np.asarray(dummy["PE.Station_X"].iloc[0])[mask]
