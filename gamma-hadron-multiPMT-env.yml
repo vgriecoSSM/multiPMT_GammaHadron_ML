@@ -19,3 +19,4 @@ dependencies:
   - uproot
   - optuna
   - pathlib
+  - iminuit
