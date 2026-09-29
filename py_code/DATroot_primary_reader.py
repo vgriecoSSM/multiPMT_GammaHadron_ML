@@ -1,8 +1,27 @@
 import pandas as pd
 import numpy as np
 
+def get_first_pe_time(times, max_time, time_resolution):
 
-def get_stations_info(primary: pd.DataFrame, tank_pos_file_path : str, number_of_channels: int = 31381, channels_per_stations: int = 7):
+    if time_resolution <= 0:
+
+        raise ValueError("time_resolution must be positive.")
+
+    times = np.asarray(times, dtype=float)
+
+    times = times[np.isfinite(times) & (times >= 0) & (times < max_time)]
+
+    if len(times) == 0:
+
+        return np.nan
+
+    first_pe_time = np.min(times)
+
+    rounded_time = round(first_pe_time / time_resolution) * time_resolution
+
+    return round(rounded_time, 12)
+
+def get_stations_info(primary: pd.DataFrame, tank_pos_file_path : str, number_of_channels: int, channels_per_station: int):
 
     if len(primary) != 1:
         return None
@@ -10,9 +29,9 @@ def get_stations_info(primary: pd.DataFrame, tank_pos_file_path : str, number_of
         primary = primary.copy()
         
     PEs_ID = np.asarray(primary["HAWCSim.PE.PMTID"].iloc[0])
-    Station = (PEs_ID // channels_per_stations).astype(int)
+    Station = (PEs_ID // channels_per_station).astype(int)
 
-    max_station = number_of_channels // channels_per_stations
+    max_station = number_of_channels // channels_per_station
     Station = np.clip(Station, 0, max_station - 1)
 
     primary["PE.Station_ID"] = pd.Series([Station], index=primary.index, dtype=object)
@@ -91,7 +110,7 @@ def make_trace(times, max_time):
 
     return np.bincount(arr, minlength=max_time)[:max_time].astype(int).tolist()
 
-def get_st_lvl_test_df(primary : pd.DataFrame, number_of_channels: int = 31381, channels_per_stations: int = 7, max_time:float = 100):
+def get_st_lvl_test_df(primary : pd.DataFrame, number_of_channels: int, channels_per_station: int, max_time:float = 100, time_resolution : float = 0.2):
 
     dummy = primary.copy()
 
@@ -114,13 +133,21 @@ def get_st_lvl_test_df(primary : pd.DataFrame, number_of_channels: int = 31381, 
     pe_frac_mu = []
     aretheremuon = []
 
+    first_pe_time_ch0 = []
+    first_pe_time_ch1 = []
+    first_pe_time_ch2 = []
+    first_pe_time_ch3 = []
+    first_pe_time_ch4 = []
+    first_pe_time_ch5 = []
+    first_pe_time_ch6 = []
+
     #nominal info on the primary
     p_Energy = np.asarray(dummy['HAWCSim.Evt.Energy'].iloc[0])
     p_theta = np.asarray(dummy['HAWCSim.Evt.Theta'].iloc[0])
     p_X = np.asarray(dummy['HAWCSim.Evt.X'].iloc[0]) 
     p_Y = np.asarray(dummy['HAWCSim.Evt.Y'].iloc[0])
 
-    for i in range(0, number_of_channels, channels_per_stations):
+    for i in range(0, number_of_channels, channels_per_station):
         
         times_pe_ch0 = []
         times_pe_ch1 = []
@@ -146,7 +173,7 @@ def get_st_lvl_test_df(primary : pd.DataFrame, number_of_channels: int = 31381, 
         sh_plane_times = np.asarray(dummy["PE.Corrected_Times"].iloc[0])
         PE_origin = np.asarray(dummy["HAWCSim.PE.origPType"].iloc[0])
 
-        mask = (PEs_ID < i + channels_per_stations) & (PEs_ID >= i) & (sh_plane_times <= max_time)
+        mask = (PEs_ID < i + channels_per_station) & (PEs_ID >= i) & (sh_plane_times <= max_time)
         
         #pes for that PMTs in that station and times within 100ns
         pe_times_ = np.asarray(dummy["PE.Corrected_Times"].iloc[0])[mask]
@@ -175,6 +202,14 @@ def get_st_lvl_test_df(primary : pd.DataFrame, number_of_channels: int = 31381, 
                 pe_by_muon += 1
             else :
                 pe_not_by_muon +=1
+
+        first_pe_time_ch0.append(get_first_pe_time(times_pe_ch0, max_time, time_resolution))
+        first_pe_time_ch1.append(get_first_pe_time(times_pe_ch1, max_time, time_resolution))
+        first_pe_time_ch2.append(get_first_pe_time(times_pe_ch2, max_time, time_resolution))
+        first_pe_time_ch3.append(get_first_pe_time(times_pe_ch3, max_time, time_resolution))
+        first_pe_time_ch4.append(get_first_pe_time(times_pe_ch4, max_time, time_resolution))
+        first_pe_time_ch5.append(get_first_pe_time(times_pe_ch5, max_time, time_resolution))
+        first_pe_time_ch6.append(get_first_pe_time(times_pe_ch6, max_time, time_resolution))
                 
         ch0_trace = make_trace(times_pe_ch0, max_time)
         ch1_trace = make_trace(times_pe_ch1, max_time)
@@ -235,12 +270,19 @@ def get_st_lvl_test_df(primary : pd.DataFrame, number_of_channels: int = 31381, 
         "Nominal_YCore": YCore,
         "T_C" : t_from_c,
         "frac_mu" : pe_frac_mu,
-        "IsThereMuon" : aretheremuon
+        "IsThereMuon" : aretheremuon,
+        "first_pe_time_ch0": first_pe_time_ch0,
+        "first_pe_time_ch1": first_pe_time_ch1,
+        "first_pe_time_ch2": first_pe_time_ch2,
+        "first_pe_time_ch3": first_pe_time_ch3,
+        "first_pe_time_ch4": first_pe_time_ch4,
+        "first_pe_time_ch5": first_pe_time_ch5,
+        "first_pe_time_ch6": first_pe_time_ch6
     })
 
     return df_event_level
 
-def get_st_lvl_train_sm_df(primary : pd.DataFrame, number_of_channels: int = 31381, channels_per_stations: int = 7, max_time:float = 100):
+def get_st_lvl_train_sm_df(primary : pd.DataFrame, number_of_channels: int, channels_per_station: int, max_time:float = 100, time_resolution : float = 0.2):
 
     dummy = primary.copy()
 
@@ -263,13 +305,21 @@ def get_st_lvl_train_sm_df(primary : pd.DataFrame, number_of_channels: int = 313
     pe_frac_mu = []
     aretheremuon = []
 
+    first_pe_time_ch0 = []
+    first_pe_time_ch1 = []
+    first_pe_time_ch2 = []
+    first_pe_time_ch3 = []
+    first_pe_time_ch4 = []
+    first_pe_time_ch5 = []
+    first_pe_time_ch6 = []
+
     #nominal info on the primary
     p_Energy = np.asarray(dummy['HAWCSim.Evt.Energy'].iloc[0])
     p_theta = np.asarray(dummy['HAWCSim.Evt.Theta'].iloc[0])
     p_X = np.asarray(dummy['HAWCSim.Evt.X'].iloc[0])
     p_Y = np.asarray(dummy['HAWCSim.Evt.Y'].iloc[0])
 
-    for i in range(0, number_of_channels, channels_per_stations):
+    for i in range(0, number_of_channels, channels_per_station):
         
         times_pe_ch0 = []
         times_pe_ch1 = []
@@ -303,7 +353,7 @@ def get_st_lvl_train_sm_df(primary : pd.DataFrame, number_of_channels: int = 313
         #distance2 = (PE_xT_all - p_X)**2 + (PE_yT_all - p_Y)**2 #as definition
         #(distance2 <= (300*100)**2) #in the mask
 
-        mask = (PEs_ID < i + channels_per_stations) & (PEs_ID >= i) & (sh_plane_times <= max_time) & ((PE_origin == 5) | (PE_origin == 6)) 
+        mask = (PEs_ID < i + channels_per_station) & (PEs_ID >= i) & (sh_plane_times <= max_time) & ((PE_origin == 5) | (PE_origin == 6)) 
 
         one_muon_condition = np.unique(trackID[mask]) #ensuring there is not more than one muon
 
@@ -345,6 +395,14 @@ def get_st_lvl_train_sm_df(primary : pd.DataFrame, number_of_channels: int = 313
         ch4_trace = make_trace(times_pe_ch4, max_time)
         ch5_trace = make_trace(times_pe_ch5, max_time)
         ch6_trace = make_trace(times_pe_ch6, max_time)
+
+        first_pe_time_ch0.append(get_first_pe_time(times_pe_ch0, max_time, time_resolution))
+        first_pe_time_ch1.append(get_first_pe_time(times_pe_ch1, max_time, time_resolution))
+        first_pe_time_ch2.append(get_first_pe_time(times_pe_ch2, max_time, time_resolution))
+        first_pe_time_ch3.append(get_first_pe_time(times_pe_ch3, max_time, time_resolution))
+        first_pe_time_ch4.append(get_first_pe_time(times_pe_ch4, max_time, time_resolution))
+        first_pe_time_ch5.append(get_first_pe_time(times_pe_ch5, max_time, time_resolution))
+        first_pe_time_ch6.append(get_first_pe_time(times_pe_ch6, max_time, time_resolution))
         
         #tank position for that station
         PE_xT = np.asarray(dummy["PE.Station_X"].iloc[0])[mask]
@@ -396,12 +454,19 @@ def get_st_lvl_train_sm_df(primary : pd.DataFrame, number_of_channels: int = 313
         "Nominal_YCore": YCore,
         "T_C" : t_from_c,
         "frac_mu" : pe_frac_mu,
-        "IsThereMuon" : aretheremuon
+        "IsThereMuon" : aretheremuon,
+        "first_pe_time_ch0": first_pe_time_ch0,
+        "first_pe_time_ch1": first_pe_time_ch1,
+        "first_pe_time_ch2": first_pe_time_ch2,
+        "first_pe_time_ch3": first_pe_time_ch3,
+        "first_pe_time_ch4": first_pe_time_ch4,
+        "first_pe_time_ch5": first_pe_time_ch5,
+        "first_pe_time_ch6": first_pe_time_ch6
     })
 
     return df_event_level
 
-def get_st_lvl_train_nmu_df(primary : pd.DataFrame, number_of_channels: int = 31381, channels_per_stations: int = 7, max_time:float = 100):
+def get_st_lvl_train_nmu_df(primary : pd.DataFrame, number_of_channels: int, channels_per_station: int, max_time: float = 100, time_resolution : float = 0.2):
 
     dummy = primary.copy()
 
@@ -424,13 +489,21 @@ def get_st_lvl_train_nmu_df(primary : pd.DataFrame, number_of_channels: int = 31
     pe_frac_mu = []
     aretheremuon = []
 
+    first_pe_time_ch0 = []
+    first_pe_time_ch1 = []
+    first_pe_time_ch2 = []
+    first_pe_time_ch3 = []
+    first_pe_time_ch4 = []
+    first_pe_time_ch5 = []
+    first_pe_time_ch6 = []
+
     #nominal info on the primary
     p_Energy = np.asarray(dummy['HAWCSim.Evt.Energy'].iloc[0])
     p_theta = np.asarray(dummy['HAWCSim.Evt.Theta'].iloc[0])
     p_X = np.asarray(dummy['HAWCSim.Evt.X'].iloc[0])
     p_Y = np.asarray(dummy['HAWCSim.Evt.Y'].iloc[0])
 
-    for i in range(0, number_of_channels, channels_per_stations):
+    for i in range(0, number_of_channels, channels_per_station):
         
         times_pe_ch0 = []
         times_pe_ch1 = []
@@ -462,13 +535,13 @@ def get_st_lvl_train_nmu_df(primary : pd.DataFrame, number_of_channels: int = 31
         #distance2 = (PE_xT_all - p_X)**2 + (PE_yT_all - p_Y)**2  #as definition
         #(distance2 <= (300*100)**2) #in the mask
   
-        mask_check = (PEs_ID < i + channels_per_stations) & (PEs_ID >= i) & (sh_plane_times <= max_time)
+        mask_check = (PEs_ID < i + channels_per_station) & (PEs_ID >= i) & (sh_plane_times <= max_time)
         PE_origin_check = PE_origin[mask_check]
         
         if np.any((PE_origin_check == 5) | (PE_origin_check == 6)):
             continue
         
-        mask = (PEs_ID < i + channels_per_stations) & (PEs_ID >= i) & (sh_plane_times <= max_time) & ((PE_origin != 5) & (PE_origin != 6)) 
+        mask = (PEs_ID < i + channels_per_station) & (PEs_ID >= i) & (sh_plane_times <= max_time) & ((PE_origin != 5) & (PE_origin != 6)) 
 
         #pes for that PMTs in that station and times within 100ns
         pe_times_ = np.asarray(dummy["PE.Corrected_Times"].iloc[0])[mask]
@@ -505,6 +578,14 @@ def get_st_lvl_train_nmu_df(primary : pd.DataFrame, number_of_channels: int = 31
         ch4_trace = make_trace(times_pe_ch4, max_time)
         ch5_trace = make_trace(times_pe_ch5, max_time)
         ch6_trace = make_trace(times_pe_ch6, max_time)
+
+        first_pe_time_ch0.append(get_first_pe_time(times_pe_ch0, max_time, time_resolution))
+        first_pe_time_ch1.append(get_first_pe_time(times_pe_ch1, max_time, time_resolution))
+        first_pe_time_ch2.append(get_first_pe_time(times_pe_ch2, max_time, time_resolution))
+        first_pe_time_ch3.append(get_first_pe_time(times_pe_ch3, max_time, time_resolution))
+        first_pe_time_ch4.append(get_first_pe_time(times_pe_ch4, max_time, time_resolution))
+        first_pe_time_ch5.append(get_first_pe_time(times_pe_ch5, max_time, time_resolution))
+        first_pe_time_ch6.append(get_first_pe_time(times_pe_ch6, max_time, time_resolution))
         
         #tank position for that station
         PE_xT = np.asarray(dummy["PE.Station_X"].iloc[0])[mask]
@@ -556,7 +637,14 @@ def get_st_lvl_train_nmu_df(primary : pd.DataFrame, number_of_channels: int = 31
         "Nominal_YCore": YCore,
         "T_C" : t_from_c,
         "frac_mu" : pe_frac_mu,
-        "IsThereMuon" : aretheremuon
+        "IsThereMuon" : aretheremuon,
+        "first_pe_time_ch0": first_pe_time_ch0,
+        "first_pe_time_ch1": first_pe_time_ch1,
+        "first_pe_time_ch2": first_pe_time_ch2,
+        "first_pe_time_ch3": first_pe_time_ch3,
+        "first_pe_time_ch4": first_pe_time_ch4,
+        "first_pe_time_ch5": first_pe_time_ch5,
+        "first_pe_time_ch6": first_pe_time_ch6
     })
 
     return df_event_level

@@ -14,10 +14,21 @@ import joblib
 
 
 def preprocess(path: str, traces=False, min_st_dist : float = 0, max_st_dist : float = 600, pe_min : float = 1):
+    
     df = pd.read_parquet(path)
+    
     df = df[df["T_C"] >= min_st_dist]
     df = df[df["T_C"] <= max_st_dist]
     df = df[df["total_pe"] >= pe_min]
+    
+    df = df.drop("Nom_Th", axis = 1)
+    df = df.drop("Nom_En", axis = 1) 
+    df = df.drop("Nom_Y_C", axis = 1)
+    df = df.drop("Nom_X_C", axis = 1)
+    df = df.drop("R_T", axis = 1)
+    df = df.drop("X_T", axis = 1)
+    df = df.drop("Y_T", axis = 1)
+    
     if not traces:
         X = df.drop(columns=['IsThereMuon', "ch_0", "ch_ref", "ch_60", "ch_120", "ch_180", "ch_240", "ch_300"], errors='ignore')
     else:

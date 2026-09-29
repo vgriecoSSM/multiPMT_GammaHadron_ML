@@ -1,0 +1,60 @@
+paths:
+  dat_path_protons: /swgo/Array_Simulato_Analisi_ML/roots_mPMT_protons_SWGO_array/4FF_R600m_h175r180_black_uniform0600m_100300TeV_030deg/
+  dat_path_gammas: /swgo/Array_Simulato_Analisi_ML/roots_mPMT_gammas_SWGO_array/4FF_R600m_h175r180_black_uniform0600m_100300TeV_030deg/
+  txt_tank_positions: ../survey_and_array_txt_repo/tank_pos_H_4FF.txt
+    
+ranges:
+  time_window_ns: 500
+  tdc_time_resolution_ns: 0.2
+  min_energy_reco_gev: 100000
+  max_energy_reco_gev: 300000  #300000 
+  min_theta_deg: 0
+  max_theta_deg: 30
+
+dat_ranges:
+  train_dat_min: 0 #0
+  train_dat_max: 300 #300 
+  test_protons_dat_min: 301 #301
+  test_protons_dat_max: 6000  #6000
+  test_gammas_dat_min: 0
+  test_gammas_dat_max: 600   #600
+
+directories:
+  traces_dir: dfs_traces
+  feats_dir: dfs_feats
+  models_dir: models_ML
+  output_dir: output_files_ML
+  results_dir: results_files_ML
+  pictures_dir: pictures
+
+detector:
+  number_of_channels_per_tank: 7
+  array_number_of_channels: 31381
+  ff: 4
+  tank_height_cm: 175
+  tank_radius_cm: 180
+  intended_cut_on_pes: 13
+  tank_reflectiveness: Black
+  mpmt_or_8inches: 8inches #mPMT        
+  tank_type: H
+  ADC_MHz: None
+  model: XGBoost_IC
+
+array_dirs:
+  mPMT: mPMT_HAWCSim_array
+  8inches: 8inches_HAWCSim_array
+
+training:
+  train_min_st_dist_m: 0
+  train_max_st_dist_m: 700
+  train_pe_min: 13
+
+testing:
+  test_min_st_dist_m: 0
+  test_max_st_dist_m: 700
+  test_pe_min: 13
+
+gamma_hadron_discrimination: 
+  validation_split: 0.5
+  event_stations_multiplicity: 1
+  FF_mask: 4

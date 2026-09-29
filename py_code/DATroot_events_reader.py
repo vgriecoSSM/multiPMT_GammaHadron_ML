@@ -6,7 +6,7 @@ import os
 import pyarrow as pa, pyarrow.parquet as pq, gc
 from py_code import reco_regression
 
-def Read_Roots_For_Training(DATname : str, path_to_DAT_root : str, fit_type : str, output_dir_smu : str, output_dir_nmu : str, max_time : float, max_energy : float, max_theta : float, min_energy : float = 100*(10**3), min_theta : float = 0, verbose : bool = False):
+def Read_Roots_For_Training(DATname : str, path_to_DAT_root : str, txt_tank_position_path : str, number_of_channels : int, channels_per_station: int, fit_type : str, output_dir_smu : str, output_dir_nmu : str, max_time : float, max_energy : float, max_theta : float, min_energy : float = 100*(10**3), min_theta : float = 0, verbose : bool = False, time_resolution : float = 0.2):
 
     if not os.path.exists(path_to_DAT_root):
         return pd.DataFrame(), pd.DataFrame()
@@ -32,7 +32,7 @@ def Read_Roots_For_Training(DATname : str, path_to_DAT_root : str, fit_type : st
     evts_number = len(df["HAWCSim.Evt.Num"].unique())
     selected_prims = 0
 
-    for i in df["HAWCSim.Evt.Num"].unique():
+    for i in df["HAWCSim.Evt.Num"].unique():      
         
         p = df[df["HAWCSim.Evt.Num"] == i] 
         p_theta = np.asarray(p['HAWCSim.Evt.Theta'].iloc[0])
@@ -56,7 +56,8 @@ def Read_Roots_For_Training(DATname : str, path_to_DAT_root : str, fit_type : st
 
             #print("E_reco [TeV] = ", E_reco/1000)
 
-            p = dat.get_stations_info(p, "../survey_and_array_txt_repo/tank_pos_H_4FF.txt")
+            p = dat.get_stations_info(p, tank_pos_file_path = txt_tank_position_path, number_of_channels = number_of_channels,  channels_per_station = channels_per_station)
+            
             if p is None:
                 continue
 
@@ -70,8 +71,8 @@ def Read_Roots_For_Training(DATname : str, path_to_DAT_root : str, fit_type : st
             p = dat.get_dt_correction(p)
             p = dat.appy_time_correction(p)
         
-            p_sm = dat.get_st_lvl_train_sm_df(p, max_time = max_time)
-            p_nmu = dat.get_st_lvl_train_nmu_df(p, max_time = max_time)
+            p_sm = dat.get_st_lvl_train_sm_df(p, max_time = max_time, time_resolution = time_resolution, number_of_channels = number_of_channels, channels_per_station = channels_per_station)
+            p_nmu = dat.get_st_lvl_train_nmu_df(p, max_time = max_time, time_resolution = time_resolution, number_of_channels = number_of_channels, channels_per_station = channels_per_station)
 
             output_dir_smu  = output_dir_smu 
             output_dir_nmu = output_dir_nmu
@@ -84,14 +85,20 @@ def Read_Roots_For_Training(DATname : str, path_to_DAT_root : str, fit_type : st
             table_nmu = pa.Table.from_pandas(p_nmu)
             pq.write_table(table_nmu, out_path_nmu, compression="zstd")
 
-    print(DATname + ", Number of primaries in this DAT ", evts_number, "-> Primaries after the cut = ", selected_prims)
+
+        
     if selected_prims != 0:
+            
+        print(DATname + ", Number of primaries in this DAT ", evts_number, "-> Primaries after the cut = ", selected_prims)
         return p_sm, p_nmu
+        
     else:
+        
+        print("Sorry, no primaries after the cut :(")
         empty_df = pd.DataFrame()
         return empty_df, empty_df
                 
-def Read_Roots_For_Testing(output_dir : str, DATname : str, path_to_DAT_root: str, fit_type : str, max_time : float, max_energy : float, max_theta : float, min_energy : float = 100*(10**3), min_theta : float = 0, verbose : bool = False):
+def Read_Roots_For_Testing(output_dir : str, DATname : str, path_to_DAT_root: str, txt_tank_position_path : str, number_of_channels : int, channels_per_station: int, fit_type : str, max_time : float, max_energy : float, max_theta : float, min_energy : float = 100*(10**3), min_theta : float = 0, verbose : bool = False, time_resolution : float = 0.2):
 
     if not os.path.exists(path_to_DAT_root):
         return pd.DataFrame(), pd.DataFrame()
@@ -120,7 +127,7 @@ def Read_Roots_For_Testing(output_dir : str, DATname : str, path_to_DAT_root: st
     selected_prims = 0
 
     for i in df["HAWCSim.Evt.Num"].unique():
-        
+                
         p = df[df["HAWCSim.Evt.Num"] == i] 
         p_theta = np.asarray(p['HAWCSim.Evt.Theta'].iloc[0])
         p_energy = np.asarray(p['HAWCSim.Evt.Energy'].iloc[0])
@@ -140,7 +147,7 @@ def Read_Roots_For_Testing(output_dir : str, DATname : str, path_to_DAT_root: st
 
             #print("E_reco [TeV] = ", E_reco/1000)
             
-            p = dat.get_stations_info(p, "../survey_and_array_txt_repo/tank_pos_H_4FF.txt")
+            p = dat.get_stations_info(p, tank_pos_file_path = txt_tank_position_path, number_of_channels = number_of_channels,  channels_per_station = channels_per_station)
             if p is None:
                 continue
 
@@ -154,8 +161,8 @@ def Read_Roots_For_Testing(output_dir : str, DATname : str, path_to_DAT_root: st
 
             selected_prims += 1
         
-            p_test = dat.get_st_lvl_test_df(p, max_time = max_time)
-            
+            p_test = dat.get_st_lvl_test_df(p, max_time = max_time, time_resolution = time_resolution, number_of_channels = number_of_channels, channels_per_station = channels_per_station)
+
             out_path = f"{output_dir}{DATname}_{i}.parquet"
             table = pa.Table.from_pandas(p_test)
             pq.write_table(table, out_path, compression="zstd")
@@ -168,5 +175,4 @@ def Read_Roots_For_Testing(output_dir : str, DATname : str, path_to_DAT_root: st
     else :
         
         print(DATname + ", Number of primaries in this DAT ", evts_number, "-> Primaries after the cut = ", selected_prims)
-    
         return p_test

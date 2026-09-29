@@ -93,7 +93,7 @@ def add_time_Asimmetry_6ch(df : pd.DataFrame, ch0_present = False):
     df["a_time_6ch"] = a_times
     return df
 
-def add_multiplicity(df = pd.DataFrame, pe_trigger = 2, time_frame = 10):
+def add_multiplicity(df = pd.DataFrame, pe_trigger = 2, time_frame = 10, time_resolution = 1):
 
     ch0 = df["ch_0"]
     chref = df["ch_ref"]
@@ -105,7 +105,7 @@ def add_multiplicity(df = pd.DataFrame, pe_trigger = 2, time_frame = 10):
     multiplicity = []
     for i in range(df.shape[0]):
         channels = [ch0.iloc[i], chref.iloc[i], ch60.iloc[i], ch120.iloc[i], ch180.iloc[i], ch240.iloc[i], ch300.iloc[i]]
-        multiplicity_val = get_variables.get_multiplicity(channels, pe_trigger, time_frame)
+        multiplicity_val = get_variables.get_multiplicity(df = df, channels = channels, pe_trigger = pe_trigger, time_frame = time_frame, time_resolution = time_resolution)
         multiplicity.append(multiplicity_val)
     df["multiplicity"] = multiplicity
     return df
@@ -133,6 +133,7 @@ def add_rel_time(df = pd.DataFrame):
     return df
 
 def add_times_rel_to_min_time(df : pd.DataFrame):
+    
     t0 = df["t0"]
     tref = df["tref"]
     t60 = df["t60"]
@@ -160,7 +161,7 @@ def add_times_rel_to_min_time(df : pd.DataFrame):
     df["t240_rel_min"] = t240_rel_min
     df["t300_rel_min"] = t300_rel_min
 
-    return df_with_time_rel
+    return df
 
 def add_min_times(df : pd.DataFrame):
     
@@ -192,3 +193,34 @@ def add_min_times(df : pd.DataFrame):
     df["t_7min"] = t_7min
 
     return df
+
+def add_time_delay_6ch(df : pd.DataFrame, TDC_time_resolution : float = 0.2): 
+ 
+    t0 = df["t0"] 
+    tref = df["tref"] 
+    t60 = df["t60"] 
+    t120 = df["t120"] 
+    t180 = df["t180"] 
+    t240 = df["t240"] 
+    t300 = df["t300"] 
+ 
+    fPE_times = np.array([[t0.iloc[i], tref.iloc[i], t60.iloc[i], t120.iloc[i], t180.iloc[i], t240.iloc[i], t300.iloc[i]] for i in range(len(t0))], dtype=float) 
+ 
+    valid_events = np.any(np.isfinite(fPE_times), axis=1) 
+ 
+    t_min = np.full(len(fPE_times), np.nan) 
+    t_min[valid_events] = np.nanmin(fPE_times[valid_events], axis=1) 
+ 
+    normalized_delays = (fPE_times - t_min[:, None]) / TDC_time_resolution 
+    normalized_delays = np.nan_to_num(normalized_delays, nan=0.0) 
+ 
+    sum_diff_times = np.sum(normalized_delays, axis=1) 
+ 
+    D_t = np.log1p(sum_diff_times) 
+    D_t[~valid_events] = np.nan 
+ 
+    df_with_time_delay = df.copy() 
+    df_with_time_delay["D_t"] = D_t 
+ 
+    return df_with_time_delay
+        

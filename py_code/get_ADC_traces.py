@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from py_code import get_ADC_traces
 
-def get_ADC_sampled_df(df, ADC_MHz : int | None = 250):
+def get_ADC_sampled_df(df, ADC_MHz : int | None = 250, input_time_resolution : float = 1.0):
 
 
     if ADC_MHz is None:
@@ -20,7 +20,10 @@ def get_ADC_sampled_df(df, ADC_MHz : int | None = 250):
         return df_samp
 
     
-    rate_ns = int(1000*1/ADC_MHz)
+    adc_time_resolution = 1000 / ADC_MHz
+
+    samples_per_adc_bin = int(round(adc_time_resolution/ input_time_resolution))
+                             
     ch0 = df["ch_0"]
     chref = df["ch_ref"]
     ch60 = df["ch_60"]
@@ -37,19 +40,19 @@ def get_ADC_sampled_df(df, ADC_MHz : int | None = 250):
     ch300_samp = []
     
     for i in range(df.shape[0]):
-            ch0_evt = [sum(ch0.iloc[i][j:j+rate_ns]) for j in range(0, len(ch0.iloc[i]), rate_ns)]
+            ch0_evt = [sum(ch0.iloc[i][j:j+samples_per_adc_bin]) for j in range(0, len(ch0.iloc[i]), samples_per_adc_bin)]
             ch0_samp.append(ch0_evt)
-            chref_evt = [sum(chref.iloc[i][j:j+rate_ns]) for j in range(0, len(chref.iloc[i]), rate_ns)]
+            chref_evt = [sum(chref.iloc[i][j:j+samples_per_adc_bin]) for j in range(0, len(chref.iloc[i]), samples_per_adc_bin)]
             chref_samp.append(chref_evt)
-            ch60_evt = [sum(ch60.iloc[i][j:j+rate_ns]) for j in range(0, len(ch60.iloc[i]), rate_ns)]
+            ch60_evt = [sum(ch60.iloc[i][j:j+samples_per_adc_bin]) for j in range(0, len(ch60.iloc[i]), samples_per_adc_bin)]
             ch60_samp.append(ch60_evt) 
-            ch120_evt = [sum(ch120.iloc[i][j:j+rate_ns]) for j in range(0, len(ch120.iloc[i]), rate_ns)]
+            ch120_evt = [sum(ch120.iloc[i][j:j+samples_per_adc_bin]) for j in range(0, len(ch120.iloc[i]), samples_per_adc_bin)]
             ch120_samp.append(ch120_evt)
-            ch180_evt = [sum(ch180.iloc[i][j:j+rate_ns]) for j in range(0, len(ch180.iloc[i]), rate_ns)]
+            ch180_evt = [sum(ch180.iloc[i][j:j+samples_per_adc_bin]) for j in range(0, len(ch180.iloc[i]), samples_per_adc_bin)]
             ch180_samp.append(ch180_evt)
-            ch240_evt = [sum(ch240.iloc[i][j:j+rate_ns]) for j in range(0, len(ch240.iloc[i]), rate_ns)]
+            ch240_evt = [sum(ch240.iloc[i][j:j+samples_per_adc_bin]) for j in range(0, len(ch240.iloc[i]), samples_per_adc_bin)]
             ch240_samp.append(ch240_evt)
-            ch300_evt = [sum(ch300.iloc[i][j:j+rate_ns]) for j in range(0, len(ch300.iloc[i]), rate_ns)]
+            ch300_evt = [sum(ch300.iloc[i][j:j+samples_per_adc_bin]) for j in range(0, len(ch300.iloc[i]), samples_per_adc_bin)]
             ch300_samp.append(ch300_evt)
         
     df_samp = df.copy()

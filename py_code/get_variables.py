@@ -4,7 +4,7 @@ import math
 from scipy.stats import skew
 
 def get_name_var():
-    var_dict = {get_first_time : ["t0", "tref","t60","t120","t180","t240","t300"],
+    var_dict = {
                 get_total_pe : "total_pe",
                 get_Asimmetry_6ch : "a_6ch",
                 get_Asimmetry_4ch : "a_4ch",
@@ -41,21 +41,11 @@ def get_name_var():
                 get_t_rise_10_50 : ["t_rise_10_50_ch0", "t_rise_10_50_chref", "t_rise_10_50_ch60", "t_rise_10_50_ch120", "t_rise_10_50_ch180", "t_rise_10_50_ch240", "t_rise_10_50_ch300"],
                 get_t_rise_50_90 : ["t_rise_50_90_ch0", "t_rise_50_90_chref", "t_rise_50_90_ch60", "t_rise_50_90_ch120", "t_rise_50_90_ch180", "t_rise_50_90_ch240", "t_rise_50_90_ch300"],
                 get_t_rise_10_90 : ["t_rise_10_90_ch0", "t_rise_10_90_chref", "t_rise_10_90_ch60", "t_rise_10_90_ch120", "t_rise_10_90_ch180", "t_rise_10_90_ch240", "t_rise_10_90_ch300"],
+                get_R2_charge : "R2_charge",
                 get_Asimmetry_6ch_foractivechannels : "a_6ch_activechs"
                }
     return var_dict
 
-def get_first_time(channels : list, pe_thresh : int = 1): 
-    times = [np.nan for i in range(7)]
-    for ch_indx, ch in enumerate(channels): 
-        val = 0
-        for indx, pe in enumerate(ch):
-            val += pe
-            if val>= pe_thresh:
-                times[ch_indx] = indx
-                break
-    times = [i*0.2 for i in times]
-    return times
 
 def get_total_pe(channels : list):
     ch0 = sum(channels[0])
@@ -67,6 +57,7 @@ def get_total_pe(channels : list):
     ch300 = sum(channels[6])
     tot_pe = ch0 + chref + ch60 + ch120 + ch180 + ch240 + ch300
     return tot_pe
+
 
 def get_Asimmetry_6ch(channels : list, min_time = 0 , max_time = 100, ch0_present = False, ADC_MHz = 1000):
 
@@ -194,16 +185,20 @@ def get_inst_Asimmetry_6ch(channels : list, ch0_present = False, min_pe = 2):
     if (front_ch + back_ch) != 0 and front_ch >= min_pe : return (front_ch - back_ch)/(front_ch + back_ch)
     else : return np.nan
 
-def get_multiplicity(channels : list, pe_trigger = 2, time_frame = 10):
-    times = get_first_time(channels, pe_thresh = pe_trigger)
+def get_multiplicity(df : pd.DataFrame, channels : list, pe_trigger = 2, time_frame = 10, time_resolution = 1.0):
+
+    time_columns = ["t0", "tref", "t60", "t120", "t180", "t240", "t300"]
+
+    times = df[time_columns].to_numpy(dtype=float)
+
     if np.any(~np.isnan(times)):
+
         first_trigger_time = np.nanmin(times)
         open_window = first_trigger_time + time_frame
-        
-        t_samp = 0.2
-        ftt_indx = math.ceil(first_trigger_time/t_samp)
-        opw_indx = math.ceil(open_window/t_samp)
-        
+
+        ftt_indx = int(round(first_trigger_time/time_resolution))
+        opw_indx = int(np.ceil(open_window/time_resolution))
+
         ch0_w = sum(channels[0][ftt_indx:opw_indx])
         chref_w = sum(channels[1][ftt_indx:opw_indx])
         ch60_w = sum(channels[2][ftt_indx:opw_indx])
@@ -211,12 +206,26 @@ def get_multiplicity(channels : list, pe_trigger = 2, time_frame = 10):
         ch180_w = sum(channels[4][ftt_indx:opw_indx])
         ch240_w = sum(channels[5][ftt_indx:opw_indx])
         ch300_w = sum(channels[6][ftt_indx:opw_indx])
-    
-        w_ch = np.array([ch0_w, chref_w, ch60_w, ch120_w, ch180_w, ch240_w, ch300_w])
+
+        w_ch = np.array([
+            ch0_w,
+            chref_w,
+            ch60_w,
+            ch120_w,
+            ch180_w,
+            ch240_w,
+            ch300_w
+        ])
+
         multiplicity = np.sum(w_ch >= pe_trigger)
-        if multiplicity!= 0 : return multiplicity
-        else : return np.nan
-    else : return np.nan    
+
+        if multiplicity != 0:
+            return multiplicity
+        else:
+            return np.nan
+
+    else:
+        return np.nan   
 
 def get_ch_pe(channels : list):
     ch0 = sum(channels[0])
@@ -1056,3 +1065,55 @@ def get_Asimmetry_6ch_foractivechannels(channels : list, min_time = 0 , max_time
     back_ch = ch120 + ch180 + ch240
     if (front_ch + back_ch) != 0 : return ((front_ch - back_ch - 1)/(front_ch + back_ch))*(active_chs-1)/6
     else : return np.nan
+
+def get_R2_charge(channels : list, min_time = 0 , max_time = 100, ADC_MHz = 1000):
+
+    if ADC_MHz is None:
+
+        ch0 = sum(channels[0])
+        chref = sum(channels[1])
+        ch60 = sum(channels[2])
+        ch120 = sum(channels[3])
+        ch180 = sum(channels[4])
+        ch240 = sum(channels[5])
+        ch300 = sum(channels[6])
+
+    else:
+
+        t_samp = 1000/ADC_MHz
+        max_indx = math.ceil(max_time/t_samp)
+        min_indx = math.floor(min_time/t_samp)
+        ch0 = sum(channels[0][min_indx:max_indx])
+        chref = sum(channels[1][min_indx:max_indx])
+        ch60 = sum(channels[2][min_indx:max_indx])
+        ch120 = sum(channels[3][min_indx:max_indx])
+        ch180 = sum(channels[4][min_indx:max_indx])
+        ch240 = sum(channels[5][min_indx:max_indx])
+        ch300 = sum(channels[6][min_indx:max_indx])
+
+    xy_ch0_pos = np.array([0,0])
+    xy_chref = np.array([1, 0])
+    xy_ch60_pos = np.array([np.cos(60*np.pi/180),np.sin(60*np.pi/180)])
+    xy_ch120_pos = np.array([np.cos(120*np.pi/180),np.sin(120*np.pi/180)])
+    xy_ch180_pos = np.array([np.cos(180*np.pi/180),np.sin(180*np.pi/180)])
+    xy_ch240_pos = np.array([np.cos(240*np.pi/180),np.sin(240*np.pi/180)])
+    xy_ch300_pos = np.array([np.cos(300*np.pi/180),np.sin(300*np.pi/180)])
+
+    xy_chs = [xy_ch0_pos,xy_chref,xy_ch60_pos,xy_ch120_pos,xy_ch180_pos,xy_ch240_pos,xy_ch300_pos]
+    charges = np.array([ch0, chref, ch60, ch120, ch180, ch240, ch300])
+
+    if np.sum(charges) != 0:
+
+        x_chs = np.array([xy_chs[i][0] for i in range(len(xy_chs))])
+        y_chs = np.array([xy_chs[i][1] for i in range(len(xy_chs))])
+
+        x_bar = np.sum(x_chs*charges)/np.sum(charges)
+        y_bar = np.sum(y_chs*charges)/np.sum(charges)
+
+        R2 = np.sum(charges*((x_chs - x_bar)**2 + (y_chs - y_bar)**2))/np.sum(charges)
+
+    else:
+
+        R2 = np.nan
+
+    return R2
