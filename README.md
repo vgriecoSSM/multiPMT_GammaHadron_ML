@@ -17,11 +17,16 @@ Not enough storage for unzipped directories -> Do :
 To run the pipeline:
 
     - cd gamma_hadron_discrimination
-    - run -> Features_Parquet_Builder
-    - run -> Model_Train
-    - run -> Apply_Model
-    - run -> (optional) Model_Performance_Single_Station
-    - run -> Gamma_Hadron_Discrimination_Performance
+    
+    - set path to root files in config.yaml
+    - set desired parameters in config.yaml
+
+    - run -> 1_Traces_Extraction.ipynb
+    - run -> 2_Features_Parquet_Builder.ipynb
+    - run -> 3_Model_Train.ipynb
+    - run -> 4_Apply_Model.ipynb
+    - run -> (optional) 5_Model_Performance_Single_Station.ipynb
+    - run -> 6_Gamma_Hadron_Discrimination_Performance.ipynb
 
 Newly created features parquet files are NOT tracked as well as output files of any kind.
 Newly created traces parquet are tracked.
